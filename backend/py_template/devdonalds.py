@@ -42,10 +42,25 @@ def parse():
 
 # [TASK 1] ====================================================================
 # Takes in a recipeName and returns it in a form that 
-def parse_handwriting(recipeName: str) -> Union[str | None]:
-	# TODO: implement me
-	return recipeName
+def parse_handwriting(recipeName: str) -> Union[str, None]:
+    # replaces _ and - with white space 
+    recipeName = recipeName.replace('-', ' ').replace('_', ' ')
 
+    # loop to only keep letters and spaces
+    cleaned_chars = []
+    for char in recipeName:
+        if char.isalpha() or char.isspace():
+            cleaned_chars.append(char)
+	#converts list of chars into string
+    cleaned_name = ''.join(cleaned_chars) 
+    
+	#split the string into a list of words
+    words = cleaned_name.split()  
+	#capitalizes the first letter of each word and return as string
+    formatted_name = ' '.join(word.capitalize() for word in words)
+
+    #if formatted_name is not empty, return it.
+    return formatted_name if formatted_name else None
 
 # [TASK 2] ====================================================================
 # Endpoint that adds a CookbookEntry to your magical cookbook

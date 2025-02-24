@@ -22,6 +22,31 @@ describe("Task 1", () => {
       const response = await getTask1("");
       expect(response.status).toBe(400);
     });
+
+    it("should handle multiple hyphens and underscores", async () => {
+      const response = await getTask1("spaghetti__--carbonara");
+      expect(response.body).toStrictEqual({ msg: "Spaghetti Carbonara" });
+    });
+
+    it("should handle trailing and leading spaces", async () => {
+      const response = await getTask1("   garlic bread   ");
+      expect(response.body).toStrictEqual({ msg: "Garlic Bread" });
+    });
+
+    it("should remove special characters", async () => {
+      const response = await getTask1("chi!cken  tikka** mas@ala");
+      expect(response.body).toStrictEqual({ msg: "Chicken Tikka Masala" });
+    });
+
+    it("should handle numbers in input", async () => {
+      const response = await getTask1("1234Pasta5");
+      expect(response.body).toStrictEqual({ msg: "Pasta" });
+    });
+
+    it("should return 400 for empty or invalid input", async () => {
+      const response = await getTask1("@#$%^&");
+      expect(response.status).toBe(400);
+    });
   });
 });
 
@@ -92,6 +117,55 @@ describe("Task 2", () => {
         cookTime: 8,
       });
       expect(resp3.status).toBe(400);
+    });
+
+    it("should reject an ingredient with negative cook time", async () => {
+      const response = await putTask2({ type: "ingredient", name: "Tomato", cookTime: -5 });
+      expect(response.status).toBe(400);
+    });
+
+    it("should reject duplicate ingredient names", async () => {
+      await putTask2({ type: "ingredient", name: "Onion", cookTime: 4 });
+      const response = await putTask2({ type: "ingredient", name: "Onion", cookTime: 3 });
+      expect(response.status).toBe(400);
+    });
+
+    it("should reject a recipe with duplicate required item names", async () => {
+      const response = await putTask2({
+        type: "recipe",
+        name: "Sandwich",
+        requiredItems: [
+          { name: "Bread", quantity: 2 },
+          { name: "Bread", quantity: 1 }
+        ],
+      });
+      expect(response.status).toBe(400);
+    });
+
+    it("should reject a recipe with an empty requiredItems list", async () => {
+      const response = await putTask2({
+        type: "recipe",
+        name: "Air Soup",
+        requiredItems: []
+      });
+      expect(response.status).toBe(400);
+    });
+
+    it("should add a valid ingredient", async () => {
+      const response = await putTask2({ type: "ingredient", name: "Cheese", cookTime: 5 });
+      expect(response.status).toBe(200);
+    });
+
+    it("should add a valid recipe", async () => {
+      const response = await putTask2({
+        type: "recipe",
+        name: "Grilled Cheese",
+        requiredItems: [
+          { name: "Bread", quantity: 2 },
+          { name: "Cheese", quantity: 1 }
+        ],
+      });
+      expect(response.status).toBe(200);
     });
   });
 });
