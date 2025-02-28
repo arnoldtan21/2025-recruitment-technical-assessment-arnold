@@ -202,13 +202,13 @@ describe("Task 3", () => {
     it("Unknown missing item", async () => {
       const cheese = {
         type: "recipe",
-        name: "Cheese",
+        name: "Baked",
         requiredItems: [{ name: "Not Real", quantity: 1 }],
       };
       const resp1 = await postEntry(cheese);
       expect(resp1.status).toBe(200);
 
-      const resp2 = await getTask3("Cheese");
+      const resp2 = await getTask3("Baked");
       expect(resp2.status).toBe(400);
     });
 
@@ -230,6 +230,122 @@ describe("Task 3", () => {
 
       const resp3 = await getTask3("Skibidi");
       expect(resp3.status).toBe(200);
+    });
+
+    it("Should return 400 for a missing recipe (no corresponding name", async () => {
+      const resp = await getTask3("nothing");
+      expect(resp.status).toBe(400);
+    });
+
+    it("Should return 400 when querying an ingredient instead of a recipe", async () => {
+      const resp = await postEntry({
+        type: "ingredient",
+        name: "mango",
+        cookTime: 2,
+      });
+      expect(resp.status).toBe(200);
+
+      const resp2 = await getTask3("mango");
+      expect(resp2.status).toBe(400);
+    });
+
+    // Recipe with missing required items should return 400
+    it("Should return 400 when a recipe contains a missing required item", async () => {
+      const cheese = {
+        type: "recipe",
+        name: "Smoothie",
+        requiredItems: [{ name: "Not Real", quantity: 1 }],
+      };
+      const resp1 = await postEntry(cheese);
+      expect(resp1.status).toBe(200);
+
+      const resp2 = await getTask3("Smoothie");
+      expect(resp2.status).toBe(400);
+    });
+
+    it("Should return correct cookTime and ingredients for nested recipes", async () => {
+      // Step 1: Add base ingredients
+      await postEntry({ type: "ingredient", name: "Flour", cookTime: 5 });
+      await postEntry({ type: "ingredient", name: "shell", cookTime: 3 });
+    
+      // Step 2: Add a recipe that uses these ingredients
+      const pancakeBatter = {
+        type: "recipe",
+        name: "Pancakesss",
+        requiredItems: [
+          { name: "Flour", quantity: 1 },
+          { name: "shell", quantity: 1 },
+        ],
+      };
+      await postEntry(pancakeBatter);
+    
+      // Step 3: Add a recipe that depends on Pancakesss (nested recipe)
+      const pancakes = {
+        type: "recipe",
+        name: "Pancakes",
+        requiredItems: [{ name: "Pancakesss", quantity: 2 }],
+      };
+      await postEntry(pancakes);
+    
+      // Step 4: Fetch summary for "Pancakes"
+      const resp = await getTask3("Pancakes");
+      expect(resp.status).toBe(200); // ✅ Expect success
+    
+      // Step 5: Verify response data
+      expect(resp.body).toStrictEqual({
+        name: "Pancakes",
+        cookTime: 16, // (Flour: 5 * 2) + (shell: 3 * 2) = 10 + 6 = 16
+        ingredients: [
+          { name: "Flour", quantity: 2 },
+          { name: "shell", quantity: 2 },
+        ],
+      });
+    });
+
+    // ✅ CookTime should be summed up correctly for multiple ingredients
+    it("Should correctly sum up cookTime when multiple ingredients are used", async () => {
+      await postEntry({ type: "ingredient", name: "Beef", cookTime: 5 });
+      await postEntry({ type: "ingredient", name: "Egg", cookTime: 3 });
+
+      const omelet = {
+        type: "recipe",
+        name: "Omelet",
+        requiredItems: [{ name: "Egg", quantity: 2 }],
+      };
+
+      await postEntry(omelet);
+      const resp = await getTask3("Omelet");
+      expect(resp.status).toBe(200);
+    });
+
+    // Should handle duplicate ingredients appearing in different recipes
+    it("Should handle duplicate ingredients appearing in different recipes", async () => {
+      await postEntry({ type: "ingredient", name: "protein", cookTime: 5 });
+      await postEntry({ type: "ingredient", name: "pepper", cookTime: 3 });
+
+      const dough = {
+        type: "recipe",
+        name: "Dough",
+        requiredItems: [
+          { name: "protein", quantity: 1 },
+          { name: "pepper", quantity: 1 },
+        ],
+      };
+
+      const pasta = {
+        type: "recipe",
+        name: "Pasta",
+        requiredItems: [
+          { name: "Dough", quantity: 2 },
+          { name: "pepper", quantity: 1 },
+        ],
+      };
+
+      await postEntry(dough);
+      await postEntry(pasta);
+
+      const resp = await getTask3("Pasta");
+      expect(resp.status).toBe(200);
     });
   });
 });

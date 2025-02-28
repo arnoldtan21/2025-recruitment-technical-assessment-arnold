@@ -76,7 +76,7 @@ app.post("/entry", (req: Request, res: Response) => {
   if (cookbook.has(name)) {
     return res.status(400).send("Entry name must be unique");
   }
-
+  
   if (type === "ingredient") {
     // cookTime must be a number and at least 0
     if (cookTime === undefined || typeof cookTime !== "number" || cookTime < 0) {
@@ -137,8 +137,8 @@ app.get("/summary", (req: Request, res: Response) => {
     for (const item of requiredItems) {
       //check that items exist in cookbook
       if (!cookbook.has(item.name)) {
-        return false; // Return failure instead of sending response directly
-      } 
+        return false; // Ensure collectIngredients fails safely
+      }      
       const entry = cookbook.get(item.name);
 
       if (entry?.type === "ingredient") {
@@ -151,6 +151,9 @@ app.get("/summary", (req: Request, res: Response) => {
           item.name,
           (ingredientMap.get(item.name) || 0) + item.quantity * multiplier
         );
+        // console.log(`Processing: ${item.name}, Quantity: ${item.quantity}, Multiplier: ${multiplier}`);
+        // console.log(`Current CookTime: ${cookTime}`);
+
       } else if (entry?.type === "recipe") {
         //type assertion as receipe (from ingredient OR receipe)
         const recipeEntry = entry as recipe;
